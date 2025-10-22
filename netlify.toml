@@ -1,2 +1,9 @@
 [functions]
-  directory = "netlify/functions" 
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# This tells the bundler to treat @google/genai as an external package.
+# It will be installed via package.json and required by the function at runtime.
+# This fixes the "Could not resolve" error.
+[[functions."*"]]
+  external_node_modules = ["@google/genai"]
