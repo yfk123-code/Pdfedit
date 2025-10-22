@@ -1,4 +1,4 @@
-import type { Page } from './types';
+import type { Page } from '../types.ts';
 
 // pdf-lib is loaded from a CDN, so we need to declare its global variable.
 declare const PDFLib: any;
@@ -25,17 +25,22 @@ const renderPdfPage = async (pdfDoc: any, pageNum: number): Promise<string> => {
     tempPdfDoc.addPage(copiedPage);
     const pdfBytes = await tempPdfDoc.save();
 
-    const pdfJs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.min.mjs');
-    pdfJs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.worker.min.mjs`;
+    try {
+        const pdfJs = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.min.mjs');
+        pdfJs.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@4.3.136/build/pdf.worker.min.mjs`;
 
-    const pdfDocProxy = await pdfJs.getDocument({ data: pdfBytes }).promise;
-    const pdfPageProxy = await pdfDocProxy.getPage(1);
-    
-    const viewport = pdfPageProxy.getViewport({ scale });
+        const pdfDocProxy = await pdfJs.getDocument({ data: pdfBytes }).promise;
+        const pdfPageProxy = await pdfDocProxy.getPage(1);
+        
+        const viewport = pdfPageProxy.getViewport({ scale });
 
-    await pdfPageProxy.render({ canvasContext: context, viewport }).promise;
+        await pdfPageProxy.render({ canvasContext: context, viewport }).promise;
 
-    return canvas.toDataURL('image/jpeg', 0.9);
+        return canvas.toDataURL('image/jpeg', 0.9);
+    } catch(e) {
+        console.error("Failed to load or use pdf.js to render page:", e);
+        throw new Error("Could not render PDF page. The pdf.js library might have failed to load from the CDN.");
+    }
 };
 
 
@@ -112,7 +117,6 @@ export const createPdf = async (pages: Page[]): Promise<Uint8Array> => {
                 continue;
             }
 
-            // FIX: Rename variable to avoid shadowing the loop variable 'page'.
             const newPdfPage = newPdfDoc.addPage();
             const { width, height } = image.scale(1);
             newPdfPage.setSize(width, height);
