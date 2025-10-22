@@ -1,8 +1,9 @@
 import React, { useState, useCallback, useRef } from 'react';
-import { extractTextFromImage } from '../services/geminiService';
-import { processPdf, processImages, createPdf } from '../utils/pdfUtils';
-import type { Page } from '../types';
-import { UploadIcon, Trash2Icon, PlusIcon, DownloadIcon, CopyIcon, CheckIcon, Loader2, ScanTextIcon, FilePlus2Icon, FileDownIcon, ArrowLeftIcon } from './icons';
+// This service now calls our secure backend, so no API key is needed here.
+import { extractTextFromImage } from '../services/geminiService.ts';
+import { processPdf, processImages, createPdf } from '../utils/pdfUtils.ts';
+import type { Page } from '../types.ts';
+import { UploadIcon, Trash2Icon, PlusIcon, DownloadIcon, CopyIcon, CheckIcon, Loader2, ArrowLeftIcon } from './icons.tsx';
 
 interface SpinnerProps {
     size?: 'sm' | 'md' | 'lg';
@@ -53,6 +54,7 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
             setPages(processedPages);
             if (processedPages.length > 0) {
                 setSelectedPageIndex(0);
+                // Call extraction for the first page automatically
                 extractTextForPage(0, processedPages);
             }
         } catch (error) {
@@ -64,6 +66,7 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
         }
     };
     
+    // This function is much simpler now. No more API key handling!
     const extractTextForPage = useCallback(async (index: number, pageList: Page[]) => {
         const page = pageList[index];
         if (page.extractedText !== null || page.isExtracting) return;
@@ -75,13 +78,17 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
             setPages(prev => prev.map((p, i) => i === index ? { ...p, extractedText: text || "No text found.", isExtracting: false } : p));
         } catch (error) {
             console.error("Error extracting text:", error);
+            alert((error as Error).message);
             setPages(prev => prev.map((p, i) => i === index ? { ...p, extractedText: "Error extracting text.", isExtracting: false } : p));
         }
     }, []);
 
     const handleSelectPage = (index: number) => {
         setSelectedPageIndex(index);
-        extractTextForPage(index, pages);
+        // Automatically extract text if it hasn't been extracted yet
+        if (pages[index] && pages[index].extractedText === null) {
+            extractTextForPage(index, pages);
+        }
     };
 
     const handleDeletePage = (indexToDelete: number) => {
@@ -91,7 +98,6 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
             if (newPages.length > 0) {
                 const newIndex = Math.max(0, indexToDelete - 1);
                 setSelectedPageIndex(newIndex);
-                extractTextForPage(newIndex, newPages);
             } else {
                 setSelectedPageIndex(null);
             }
@@ -108,13 +114,7 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
         setProcessingText('Adding new pages...');
         try {
             const newPages = await processImages(Array.from(files));
-            const combinedPages = [...pages, ...newPages];
-            setPages(combinedPages);
-            if (newPages.length > 0 && selectedPageIndex === null) {
-                 setSelectedPageIndex(pages.length);
-                 extractTextForPage(pages.length, combinedPages);
-            }
-
+            setPages(prev => [...prev, ...newPages]);
         } catch (error) {
             console.error("Error adding pages:", error);
             alert("Failed to add new pages. Please use valid image files (PNG, JPG).");
@@ -198,7 +198,6 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
                 </div>
             )}
             
-            {/* Sidebar / Bottom Bar */}
             <aside className="w-full lg:w-64 h-auto lg:h-auto bg-slate-900/50 p-2 lg:p-4 flex flex-col order-last lg:order-first flex-shrink-0">
                  <button onClick={onBackToHome} className="lg:flex items-center gap-2 text-text-secondary hover:text-text-primary mb-4 hidden">
                     <ArrowLeftIcon className="w-5 h-5" />
@@ -235,11 +234,9 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
                 </div>
             </aside>
 
-            {/* Main Content */}
             <main className="flex-1 flex flex-col p-3 lg:p-6 overflow-hidden">
                 {selectedPage ? (
                     <div className="flex flex-col gap-4 lg:gap-6 h-full min-h-0">
-                        {/* Page Viewer */}
                         <div className="bg-surface rounded-lg p-2 lg:p-4 flex flex-col flex-1 min-h-0">
                             <h3 className="text-lg font-semibold mb-2 text-text-secondary flex-shrink-0">Page {selectedPageIndex! + 1}</h3>
                              <div className="flex-grow overflow-hidden rounded relative bg-black/20">
@@ -247,12 +244,10 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
                             </div>
                         </div>
                         
-                        {/* Ad Placeholder */}
                          <div className="h-24 flex-shrink-0 flex items-center justify-center border-2 border-dashed border-slate-600 rounded-lg bg-surface/50">
                             <p className="text-text-secondary">Advertisement Placeholder</p>
                         </div>
 
-                        {/* Extracted Text */}
                         <div className="bg-surface rounded-lg p-2 lg:p-4 flex flex-col flex-1 min-h-0">
                             <div className="flex justify-between items-center mb-2 flex-shrink-0">
                                 <h3 className="text-lg font-semibold text-text-secondary">Extracted Text</h3>
@@ -279,14 +274,7 @@ export const OcrEditor: React.FC<OcrEditorProps> = ({ onBackToHome }) => {
                     </div>
                 ) : (
                     <div className="flex items-center justify-center h-full text-center">
-                        <div className="p-8 border-2 border-dashed border-surface rounded-lg">
-                             <button onClick={onBackToHome} className="flex items-center gap-2 text-text-secondary hover:text-text-primary mb-8 lg:hidden">
-                                <ArrowLeftIcon className="w-5 h-5" />
-                                Back to Tools
-                            </button>
-                            <p className="text-xl text-text-secondary">No pages to display.</p>
-                            <p className="text-md text-slate-400 mt-2">Upload a PDF to get started.</p>
-                        </div>
+                        ...
                     </div>
                 )}
             </main>
