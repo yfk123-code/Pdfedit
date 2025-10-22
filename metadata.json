@@ -1,0 +1,5 @@
+{
+  "name": "OCR PDF Editor",
+  "description": "An intelligent PDF tool to extract text, and manage pages using Gemini. Upload a PDF to get started, extract text from any page, and reorganize your document by adding or deleting pages before exporting.",
+  "requestFramePermissions": []
+}
