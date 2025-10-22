@@ -13,32 +13,18 @@ export async function extractTextFromImage(imageDataUrl: string): Promise<string
     // Dynamically import the library only when this function is called.
     const { GoogleGenAI } = await import('@google/genai');
     
-    // In a browser environment like Netlify, environment variables are not
-    // available on a `process.env` object. Attempting to access `process`
-    // throws a ReferenceError and crashes the entire application, leading
-    // to the white screen.
-    // We must check for the key on the `window` object if it exists.
-    // A better approach for production would be a secure server-side proxy,
-    // but for this client-side app, we'll assume the key is injected
-    // into the environment in a browser-compatible way if at all.
-    // For now, we will make this check fail gracefully without crashing.
-    
-    // We will attempt to get the API key from a global scope if it exists,
-    // but we will not assume `process` is defined.
-    // A real production app would fetch this from a secure backend endpoint.
-    // For this project, we'll throw a clear error if it's not found.
-    const API_KEY = (window as any).API_KEY; // A placeholder for where the key *should* be in a browser.
+    // IMPORTANT FIX: The app was crashing because it was trying to find an API key
+    // in a way that doesn't work in the browser, causing a fatal error.
+    // This new code safely checks for the API key.
+    // You MUST set your API key in Netlify's environment variables.
+    const API_KEY = (window as any).API_KEY;
 
-    if (!API_KEY && !(window as any).GEMINI_API_KEY) {
-        // This is a simplified check. A robust app would have a dedicated config.
-        // We'll throw an error that the calling component can catch and display.
-         throw new Error("API_KEY is not configured. Please ensure it is set up correctly in your deployment environment.");
+    if (!API_KEY) {
+        // This error will now be shown to the user in an alert, instead of crashing the app.
+        throw new Error("API_KEY is not configured. Please add your Gemini API_KEY as an environment variable in your Netlify deployment settings.");
     }
     
-    // Use the found key, defaulting to a fallback if needed.
-    const finalApiKey = API_KEY || (window as any).GEMINI_API_KEY;
-    
-    const ai = new GoogleGenAI({ apiKey: finalApiKey });
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     const { mimeType, data } = dataUrlToBlob(imageDataUrl);
 
