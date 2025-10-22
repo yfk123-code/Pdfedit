@@ -1,13 +1,12 @@
 // services/geminiService.ts
-
-function dataUrlToBlob(dataUrl: string): { mimeType: string; data: string } {
+function dataUrlToBlob(dataUrl: string): { mimeType: string; data : string } {
     const parts = dataUrl.split(',');
-    const metaParts = parts[0].match(/:(.*?);/);
+    const metaParts = parts[0].match (/:(.*?);/);
     if (!metaParts || metaParts.length < 2) {
-        throw new Error("Invalid data URL");
+         throw new Error("Invalid data URL");
     }
     const mimeType = metaParts[1];
-    const data = parts[1];
+    const data  = parts[1];
     return { mimeType, data };
 }
 
